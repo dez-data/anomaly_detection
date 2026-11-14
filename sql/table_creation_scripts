@@ -1,0 +1,15 @@
+CREATE TABLE baseline (
+    id               SERIAL PRIMARY KEY,
+    traffic_volume   NUMERIC,
+    response_latency NUMERIC,
+    recorded_at      TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE flagged_events (
+    id               SERIAL PRIMARY KEY,
+    traffic_volume   NUMERIC,
+    response_latency NUMERIC,
+    anomaly_score    NUMERIC,
+    flagged_at       TIMESTAMP DEFAULT now(),
+    reviewed         BOOLEAN DEFAULT false
+);
