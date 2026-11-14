@@ -7,13 +7,21 @@
 # collect the baseline rows + the new event and POST them here as JSON;
 # all the actual pandas/scikit-learn work happens in this real Python process.
 
-from fastapi import FastAPI
+import os
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 from typing import List, Optional
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 
 app = FastAPI()
+API_KEY = os.environ.get("API_KEY")
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+def verify_key(key: str = Depends(api_key_header)):
+    if not API_KEY or key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
 
 # ── Pydantic models: these describe the SHAPE of valid input
 # FastAPI checks incoming JSON against these automatically, before your
@@ -49,7 +57,7 @@ def health_check():
     return {"status": "ok"}
 
 
-@app.post("/score", response_model=ScoreResult)
+@app.post("/score", dependencies=[Depends(verify_key)])
 def score_event(request: ScoreRequest):
     baseline_df = pd.DataFrame([point.dict() for point in request.baseline])
     features = ['traffic_volume', 'response_latency']
