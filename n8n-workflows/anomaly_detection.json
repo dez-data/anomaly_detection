@@ -1,1 +1,914 @@
+{
+    "name":  "anomaly_detection",
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "POST",
+                                         "path":  "user-activity",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  2.1,
+                      "position":  [
+                                       -112,
+                                       0
+                                   ],
+                      "id":  "dfc85a3b-c377-4aa7-b147-7792fd9c3142",
+                      "name":  "Receive New Event",
+                      "webhookId":  "73f02366-d6aa-4ac4-9262-614594db87af"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "select",
+                                         "schema":  {
+                                                        "__rl":  true,
+                                                        "mode":  "list",
+                                                        "value":  "public"
+                                                    },
+                                         "table":  {
+                                                       "__rl":  true,
+                                                       "value":  "baseline",
+                                                       "mode":  "list",
+                                                       "cachedResultName":  "baseline"
+                                                   },
+                                         "limit":  500,
+                                         "sort":  {
+                                                      "values":  [
+                                                                     {
+                                                                         "column":  "recorded_at",
+                                                                         "direction":  "DESC"
+                                                                     }
+                                                                 ]
+                                                  },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.6,
+                      "position":  [
+                                       112,
+                                       -192
+                                   ],
+                      "id":  "f52c5a38-3b8a-4a72-84d8-e3971a83837a",
+                      "name":  "Fetch Baseline Rows"
+                  },
+                  {
+                      "parameters":  {
+                                         "assignments":  {
+                                                             "assignments":  [
+                                                                                 {
+                                                                                     "id":  "57bcaab6-390f-4218-895f-cab70573ec71",
+                                                                                     "name":  "traffic_volume",
+                                                                                     "value":  "={{ $json.traffic_volume }}",
+                                                                                     "type":  "number"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "a2acada0-8284-44c5-851b-fe93ccfce178",
+                                                                                     "name":  "response_latency",
+                                                                                     "value":  "={{ $json.response_latency }}",
+                                                                                     "type":  "number"
+                                                                                 }
+                                                                             ]
+                                                         },
+                                         "includeOtherFields":  true,
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.set",
+                      "typeVersion":  3.4,
+                      "position":  [
+                                       320,
+                                       -192
+                                   ],
+                      "id":  "a7190bb2-2cec-4e32-b1de-0a2c3dee4629",
+                      "name":  "Select Baseline Features"
+                  },
+                  {
+                      "parameters":  {
+                                         "aggregate":  "aggregateAllItemData",
+                                         "destinationFieldName":  "baseline",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.aggregate",
+                      "typeVersion":  1,
+                      "position":  [
+                                       528,
+                                       -192
+                                   ],
+                      "id":  "e1bc9b04-cdb6-48d2-a35d-d95eef4a2145",
+                      "name":  "Aggregate Baseline"
+                  },
+                  {
+                      "parameters":  {
+                                         "assignments":  {
+                                                             "assignments":  [
+                                                                                 {
+                                                                                     "id":  "11229098-d691-4f3b-855a-4306f5288988",
+                                                                                     "name":  "new_event.traffic_volume",
+                                                                                     "value":  "={{ $json.new_event.traffic_volume }}",
+                                                                                     "type":  "number"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "cf026344-765c-475f-be15-b5f76a7903a4",
+                                                                                     "name":  "new_event.response_latency",
+                                                                                     "value":  "={{ $json.new_event.response_latency }}",
+                                                                                     "type":  "number"
+                                                                                 }
+                                                                             ]
+                                                         },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.set",
+                      "typeVersion":  3.4,
+                      "position":  [
+                                       528,
+                                       0
+                                   ],
+                      "id":  "eab2d27f-896c-404f-a965-b4656735d280",
+                      "name":  "Tag Incoming Event"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "combine",
+                                         "combineBy":  "combineByPosition",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3.2,
+                      "position":  [
+                                       928,
+                                       -16
+                                   ],
+                      "id":  "6fd3ab7d-6073-44e4-b888-9c5af1d4e65f",
+                      "name":  "Combine Event and Baseline"
+                  },
+                  {
+                      "parameters":  {
+                                         "method":  "POST",
+                                         "url":  "https://YOUR-SERVICE.onrender.com/score",
+                                         "authentication":  "genericCredentialType",
+                                         "genericAuthType":  "httpHeaderAuth",
+                                         "sendBody":  true,
+                                         "specifyBody":  "json",
+                                         "jsonBody":  "={{ $json }}",
+                                         "options":  {
+                                                         "timeout":  90000
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.4,
+                      "position":  [
+                                       1136,
+                                       -16
+                                   ],
+                      "id":  "81d1e228-cd03-4acb-83ce-d8d5d26f6540",
+                      "name":  "Score event via API",
+                      "retryOnFail":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "rules":  {
+                                                       "values":  [
+                                                                      {
+                                                                          "conditions":  {
+                                                                                             "options":  {
+                                                                                                             "caseSensitive":  true,
+                                                                                                             "leftValue":  "",
+                                                                                                             "typeValidation":  "strict",
+                                                                                                             "version":  3
+                                                                                                         },
+                                                                                             "conditions":  [
+                                                                                                                {
+                                                                                                                    "leftValue":  "={{ $json.status }}",
+                                                                                                                    "rightValue":  "NORMAL",
+                                                                                                                    "operator":  {
+                                                                                                                                     "type":  "string",
+                                                                                                                                     "operation":  "equals"
+                                                                                                                                 },
+                                                                                                                    "id":  "7602b32a-87ae-4428-80ef-9b06bb05eb44"
+                                                                                                                }
+                                                                                                            ],
+                                                                                             "combinator":  "and"
+                                                                                         },
+                                                                          "renameOutput":  true,
+                                                                          "outputKey":  "=Normal"
+                                                                      },
+                                                                      {
+                                                                          "conditions":  {
+                                                                                             "options":  {
+                                                                                                             "caseSensitive":  true,
+                                                                                                             "leftValue":  "",
+                                                                                                             "typeValidation":  "strict",
+                                                                                                             "version":  3
+                                                                                                         },
+                                                                                             "conditions":  [
+                                                                                                                {
+                                                                                                                    "id":  "2de7d5b3-b2b3-4ce3-b685-59034d12955d",
+                                                                                                                    "leftValue":  "={{ $json.status }}",
+                                                                                                                    "rightValue":  "ANOMALY",
+                                                                                                                    "operator":  {
+                                                                                                                                     "type":  "string",
+                                                                                                                                     "operation":  "equals"
+                                                                                                                                 }
+                                                                                                                }
+                                                                                                            ],
+                                                                                             "combinator":  "and"
+                                                                                         },
+                                                                          "renameOutput":  true,
+                                                                          "outputKey":  "Anomaly"
+                                                                      }
+                                                                  ]
+                                                   },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.switch",
+                      "typeVersion":  3.4,
+                      "position":  [
+                                       1344,
+                                       -16
+                                   ],
+                      "id":  "f18293cd-7c07-4edb-8fe9-a1955747e40f",
+                      "name":  "Route by Classification"
+                  },
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "POST",
+                                         "path":  "user_activity_baseline",
+                                         "responseMode":  "responseNode",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  2.1,
+                      "position":  [
+                                       -112,
+                                       192
+                                   ],
+                      "id":  "6c6168e2-8e38-4c4b-8ac2-0110dacc6fc9",
+                      "name":  "Receive Baseline Upload",
+                      "webhookId":  "99b48391-f02f-403d-8680-35a62dd2c5bc"
+                  },
+                  {
+                      "parameters":  {
+                                         "fieldToSplitOut":  "body.records",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.splitOut",
+                      "typeVersion":  1,
+                      "position":  [
+                                       96,
+                                       192
+                                   ],
+                      "id":  "21f13994-94d7-4bc6-84cf-bfd63dee4ac6",
+                      "name":  "Split Baseline Rows"
+                  },
+                  {
+                      "parameters":  {
+                                         "assignments":  {
+                                                             "assignments":  [
+                                                                                 {
+                                                                                     "id":  "e98c2669-239e-4fb5-9bd4-1f9107919d97",
+                                                                                     "name":  "type",
+                                                                                     "value":  "baseline",
+                                                                                     "type":  "string"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "5796f246-99e5-4c19-a509-97ac69346d52",
+                                                                                     "name":  "traffic_volume",
+                                                                                     "value":  "={{ $json.traffic_volume }}",
+                                                                                     "type":  "number"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "e4557d8e-4eab-46a8-9fbe-ef4b2e24586d",
+                                                                                     "name":  "response_latency",
+                                                                                     "value":  "={{ $json.response_latency }}",
+                                                                                     "type":  "number"
+                                                                                 },
+                                                                                 {
+                                                                                     "id":  "720ffcc5-c97d-45aa-b530-726f38dd054e",
+                                                                                     "name":  "uploaded_at",
+                                                                                     "value":  "={{ $now }}",
+                                                                                     "type":  "string"
+                                                                                 }
+                                                                             ]
+                                                         },
+                                         "includeOtherFields":  true,
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.set",
+                      "typeVersion":  3.4,
+                      "position":  [
+                                       304,
+                                       192
+                                   ],
+                      "id":  "e6f8c2d2-d181-4b59-a28f-be563f15f672",
+                      "name":  "Map Baseline Columns"
+                  },
+                  {
+                      "parameters":  {
+                                         "schema":  {
+                                                        "__rl":  true,
+                                                        "value":  "public",
+                                                        "mode":  "list",
+                                                        "cachedResultName":  "public"
+                                                    },
+                                         "table":  {
+                                                       "__rl":  true,
+                                                       "value":  "baseline",
+                                                       "mode":  "list",
+                                                       "cachedResultName":  "baseline"
+                                                   },
+                                         "columns":  {
+                                                         "mappingMode":  "defineBelow",
+                                                         "value":  {
+                                                                       "traffic_volume":  "={{ $json.traffic_volume }}",
+                                                                       "response_latency":  "={{ $json.response_latency }}"
+                                                                   },
+                                                         "matchingColumns":  [
+                                                                                 "id"
+                                                                             ],
+                                                         "schema":  [
+                                                                        {
+                                                                            "id":  "id",
+                                                                            "displayName":  "id",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  true,
+                                                                            "display":  true,
+                                                                            "type":  "number",
+                                                                            "canBeUsedToMatch":  true,
+                                                                            "removed":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "traffic_volume",
+                                                                            "displayName":  "traffic_volume",
+                                                                            "required":  true,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "number",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "response_latency",
+                                                                            "displayName":  "response_latency",
+                                                                            "required":  true,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "number",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "recorded_at",
+                                                                            "displayName":  "recorded_at",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "dateTime",
+                                                                            "canBeUsedToMatch":  true,
+                                                                            "removed":  true
+                                                                        }
+                                                                    ],
+                                                         "attemptToConvertTypes":  false,
+                                                         "convertFieldsToString":  false
+                                                     },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.6,
+                      "position":  [
+                                       544,
+                                       192
+                                   ],
+                      "id":  "27102112-04db-4011-ae56-c3f46755d980",
+                      "name":  "Insert Baseline Rows"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "SELECT COUNT(*)::int AS count FROM baseline;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.6,
+                      "position":  [
+                                       752,
+                                       192
+                                   ],
+                      "id":  "72abafbe-5b00-4f58-b3e3-54dee9ce2958",
+                      "name":  "Count Baseline Rows",
+                      "executeOnce":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "conditions":  {
+                                                            "options":  {
+                                                                            "caseSensitive":  true,
+                                                                            "leftValue":  "",
+                                                                            "typeValidation":  "loose",
+                                                                            "version":  3
+                                                                        },
+                                                            "conditions":  [
+                                                                               {
+                                                                                   "id":  "3a8338a1-1c18-47fd-8b72-dee057a75eb9",
+                                                                                   "leftValue":  "={{ $json.count }}",
+                                                                                   "rightValue":  "=30",
+                                                                                   "operator":  {
+                                                                                                    "type":  "number",
+                                                                                                    "operation":  "lt"
+                                                                                                }
+                                                                               }
+                                                                           ],
+                                                            "combinator":  "and"
+                                                        },
+                                         "looseTypeValidation":  true,
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.if",
+                      "typeVersion":  2.3,
+                      "position":  [
+                                       960,
+                                       192
+                                   ],
+                      "id":  "57b86658-0dff-4b5c-b9b1-9489b25009da",
+                      "name":  "If (Baseline Row Minimum?)"
+                  },
+                  {
+                      "parameters":  {
+                                         "schema":  {
+                                                        "__rl":  true,
+                                                        "mode":  "list",
+                                                        "value":  "public"
+                                                    },
+                                         "table":  {
+                                                       "__rl":  true,
+                                                       "value":  "baseline",
+                                                       "mode":  "list",
+                                                       "cachedResultName":  "baseline"
+                                                   },
+                                         "columns":  {
+                                                         "mappingMode":  "defineBelow",
+                                                         "value":  {
+                                                                       "traffic_volume":  "={{ $(\u0027Combine Event and Baseline\u0027).first().json.new_event.traffic_volume }}",
+                                                                       "response_latency":  "={{ $(\u0027Combine Event and Baseline\u0027).first().json.new_event.response_latency }}"
+                                                                   },
+                                                         "matchingColumns":  [
+                                                                                 "id"
+                                                                             ],
+                                                         "schema":  [
+                                                                        {
+                                                                            "id":  "id",
+                                                                            "displayName":  "id",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  true,
+                                                                            "display":  true,
+                                                                            "type":  "number",
+                                                                            "canBeUsedToMatch":  true,
+                                                                            "removed":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "traffic_volume",
+                                                                            "displayName":  "traffic_volume",
+                                                                            "required":  true,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "number",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "response_latency",
+                                                                            "displayName":  "response_latency",
+                                                                            "required":  true,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "number",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "recorded_at",
+                                                                            "displayName":  "recorded_at",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "dateTime",
+                                                                            "canBeUsedToMatch":  true
+                                                                        }
+                                                                    ],
+                                                         "attemptToConvertTypes":  false,
+                                                         "convertFieldsToString":  false
+                                                     },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.6,
+                      "position":  [
+                                       1552,
+                                       -112
+                                   ],
+                      "id":  "955d5a5c-4a82-400c-acc1-b836a471d2f9",
+                      "name":  "Save Normal Event to Baseline"
+                  },
+                  {
+                      "parameters":  {
+                                         "schema":  {
+                                                        "__rl":  true,
+                                                        "mode":  "list",
+                                                        "value":  "public"
+                                                    },
+                                         "table":  {
+                                                       "__rl":  true,
+                                                       "value":  "flagged_events",
+                                                       "mode":  "list",
+                                                       "cachedResultName":  "flagged_events"
+                                                   },
+                                         "columns":  {
+                                                         "mappingMode":  "defineBelow",
+                                                         "value":  {
+                                                                       "reviewed":  false,
+                                                                       "traffic_volume":  "={{ $(\u0027Combine Event and Baseline\u0027).first().json.new_event.traffic_volume }}",
+                                                                       "response_latency":  "={{ $(\u0027Combine Event and Baseline\u0027).first().json.new_event.response_latency }}",
+                                                                       "anomaly_score":  "={{ $json.anomaly_score }}"
+                                                                   },
+                                                         "matchingColumns":  [
+                                                                                 "id"
+                                                                             ],
+                                                         "schema":  [
+                                                                        {
+                                                                            "id":  "id",
+                                                                            "displayName":  "id",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  true,
+                                                                            "display":  true,
+                                                                            "type":  "number",
+                                                                            "canBeUsedToMatch":  true,
+                                                                            "removed":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "traffic_volume",
+                                                                            "displayName":  "traffic_volume",
+                                                                            "required":  true,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "number",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "response_latency",
+                                                                            "displayName":  "response_latency",
+                                                                            "required":  true,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "number",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "anomaly_score",
+                                                                            "displayName":  "anomaly_score",
+                                                                            "required":  true,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "number",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "flagged_at",
+                                                                            "displayName":  "flagged_at",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "dateTime",
+                                                                            "canBeUsedToMatch":  true
+                                                                        },
+                                                                        {
+                                                                            "id":  "reviewed",
+                                                                            "displayName":  "reviewed",
+                                                                            "required":  false,
+                                                                            "defaultMatch":  false,
+                                                                            "display":  true,
+                                                                            "type":  "boolean",
+                                                                            "canBeUsedToMatch":  true
+                                                                        }
+                                                                    ],
+                                                         "attemptToConvertTypes":  false,
+                                                         "convertFieldsToString":  false
+                                                     },
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.6,
+                      "position":  [
+                                       1568,
+                                       80
+                                   ],
+                      "id":  "ac9893fc-7522-49dd-b153-50e94148c5fc",
+                      "name":  "Save Anomaly to Flagged Events"
+                  },
+                  {
+                      "parameters":  {
+                                         "respondWith":  "json",
+                                         "responseBody":  "={{ { \"status\": \"baseline_uploaded\", \"baseline_rows\": $(\u0027Count Baseline Rows\u0027).first().json.count, \"ready_for_scoring\": true } }}",
+                                         "options":  {
+                                                         "responseCode":  200
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.respondToWebhook",
+                      "typeVersion":  1.5,
+                      "position":  [
+                                       1184,
+                                       528
+                                   ],
+                      "id":  "c3dfa42e-4770-4df1-8eb8-e97dda19b0b8",
+                      "name":  "Respond: Baseline OK"
+                  },
+                  {
+                      "parameters":  {
+                                         "respondWith":  "json",
+                                         "responseBody":  "={{ { \"status\": \"baseline_uploaded\", \"warning\": \"BASELINE_BELOW_MINIMUM\", \"baseline_rows\": $(\u0027Count Baseline Rows\u0027).first().json.count, \"minimum_required\": 30 } }}",
+                                         "options":  {
+                                                         "responseCode":  200
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.respondToWebhook",
+                      "typeVersion":  1.5,
+                      "position":  [
+                                       1184,
+                                       160
+                                   ],
+                      "id":  "39c6ee4b-4421-49ad-a6a5-4af68ed912d7",
+                      "name":  "Respond: Baseline Too Small"
+                  },
+                  {
+                      "parameters":  {
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "type":  "n8n-nodes-base.gmail",
+                      "typeVersion":  2.2,
+                      "position":  [
+                                       1184,
+                                       304
+                                   ],
+                      "id":  "c81e29af-2fe5-491f-a4b8-c38a889c67a7",
+                      "name":  "Email Low Baseline Warning",
+                      "webhookId":  "19c047d2-2f3a-45e8-909a-efbd255569be",
+                      "disabled":  true
+                  },
+                  {
+                      "parameters":  {
+                                         "otherOptions":  {
+
+                                                          }
+                                     },
+                      "type":  "n8n-nodes-base.slack",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       1568,
+                                       256
+                                   ],
+                      "id":  "4961899a-988e-499d-bca5-03ab75e6d06d",
+                      "name":  "Alert Reviewer in Slack",
+                      "webhookId":  "74ea16f9-b50a-49e9-b932-b2de7b6da436",
+                      "disabled":  true
+                  }
+              ],
+    "connections":  {
+                        "Receive New Event":  {
+                                                  "main":  [
+                                                               [
+                                                                   {
+                                                                       "node":  "Tag Incoming Event",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   },
+                                                                   {
+                                                                       "node":  "Fetch Baseline Rows",
+                                                                       "type":  "main",
+                                                                       "index":  0
+                                                                   }
+                                                               ]
+                                                           ]
+                                              },
+                        "Fetch Baseline Rows":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Select Baseline Features",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Select Baseline Features":  {
+                                                         "main":  [
+                                                                      [
+                                                                          {
+                                                                              "node":  "Aggregate Baseline",
+                                                                              "type":  "main",
+                                                                              "index":  0
+                                                                          }
+                                                                      ]
+                                                                  ]
+                                                     },
+                        "Aggregate Baseline":  {
+                                                   "main":  [
+                                                                [
+                                                                    {
+                                                                        "node":  "Combine Event and Baseline",
+                                                                        "type":  "main",
+                                                                        "index":  0
+                                                                    }
+                                                                ]
+                                                            ]
+                                               },
+                        "Tag Incoming Event":  {
+                                                   "main":  [
+                                                                [
+                                                                    {
+                                                                        "node":  "Combine Event and Baseline",
+                                                                        "type":  "main",
+                                                                        "index":  1
+                                                                    }
+                                                                ]
+                                                            ]
+                                               },
+                        "Combine Event and Baseline":  {
+                                                           "main":  [
+                                                                        [
+                                                                            {
+                                                                                "node":  "Score event via API",
+                                                                                "type":  "main",
+                                                                                "index":  0
+                                                                            }
+                                                                        ]
+                                                                    ]
+                                                       },
+                        "Score event via API":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Route by Classification",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Receive Baseline Upload":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Split Baseline Rows",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Split Baseline Rows":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "Map Baseline Columns",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "Map Baseline Columns":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "Insert Baseline Rows",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      }
+                                                                  ]
+                                                              ]
+                                                 },
+                        "Insert Baseline Rows":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "Count Baseline Rows",
+                                                                          "type":  "main",
+                                                                          "index":  0
+                                                                      }
+                                                                  ]
+                                                              ]
+                                                 },
+                        "Count Baseline Rows":  {
+                                                    "main":  [
+                                                                 [
+                                                                     {
+                                                                         "node":  "If (Baseline Row Minimum?)",
+                                                                         "type":  "main",
+                                                                         "index":  0
+                                                                     }
+                                                                 ]
+                                                             ]
+                                                },
+                        "If (Baseline Row Minimum?)":  {
+                                                           "main":  [
+                                                                        [
+                                                                            {
+                                                                                "node":  "Respond: Baseline Too Small",
+                                                                                "type":  "main",
+                                                                                "index":  0
+                                                                            },
+                                                                            {
+                                                                                "node":  "Email Low Baseline Warning",
+                                                                                "type":  "main",
+                                                                                "index":  0
+                                                                            }
+                                                                        ],
+                                                                        [
+                                                                            {
+                                                                                "node":  "Respond: Baseline OK",
+                                                                                "type":  "main",
+                                                                                "index":  0
+                                                                            }
+                                                                        ]
+                                                                    ]
+                                                       },
+                        "Route by Classification":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Save Normal Event to Baseline",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ],
+                                                                     [
+                                                                         {
+                                                                             "node":  "Alert Reviewer in Slack",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         },
+                                                                         {
+                                                                             "node":  "Save Anomaly to Flagged Events",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Save Normal Event to Baseline":  {
+                                                              "main":  [
+                                                                           [
+
+                                                                           ]
+                                                                       ]
+                                                          },
+                        "Alert Reviewer in Slack":  {
+                                                        "main":  [
+                                                                     [
+
+                                                                     ]
+                                                                 ]
+                                                    }
+                    },
+    "active":  false,
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate"
+                 },
+    "versionId":  "250bc396-644c-45f2-908a-93b316d6b16c",
+    "meta":  {
+                 "templateCredsSetupCompleted":  true,
+                 "instanceId":  "f88c2a6804b944f9785ccf92669efcb86fa96ce3ffd3cb933ffe9ed2e44a9e38"
+             },
+    "id":  "6zcesa7CJG0MR10S",
+    "tags":  [
+
+             ]
+}
 
